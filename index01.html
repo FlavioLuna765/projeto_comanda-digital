@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Comanda Digital - Pagamento Pix</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    select, button {
+      padding: 10px;
+      margin: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    .produtos-lista {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .produto-item {
+      display: flex;
+      justify-content: space-between;
+      background: #f1f1f1;
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 6px;
+    }
+
+    .produto-item button {
+      background: red;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    .total {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+    #qrcode {
+      margin-top: 20px;
+    }
+
+    .finalizar {
+      background: green;
+      color: white;
+      cursor: pointer;
+    }
+
+    .pix-box {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .pix-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .copy-btn {
+      margin-top: 8px;
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🍻 Comanda Digital</h1>
+
+    <select id="produto-select">
+      <option>Selecione um produto</option>
+      <option value="8">Cerveja Pilsen - R$ 8,00</option>
+      <option value="10">Cerveja IPA - R$ 10,00</option>
+      <option value="12">Cerveja Stout - R$ 12,00</option>
+      <option value="15">Cerveja Artesanal - R$ 15,00</option>
+      <option value="20">Balde 6 Long Neck - R$ 20,00</option>
+    </select>
+
+    <button onclick="adicionarProduto()">Adicionar</button>
+
+    <div class="produtos-lista"></div>
+
+    <div class="total">Total: R$ <span id="valor-total">0.00</span></div>
+
+    <button id="meuBotao">Finalizar Pagamento</button>
+
+    <div id="containerImagem">
+        <img id="minhaImagem" src="imagens/qrcode-pix.png" alt="Imagem que aparece ao clicar" class="imagem-escondida">
+        <img id="minhaImagem" src="qrcode-pix.png" alt="Imagem que aparece ao clicar" class="imagem-escondida">
+    </div>
+
+    <div>
+        <p>Meu Email: <a href="mailto:seu.email@exemplo.com">seu.email@exemplo.com</a></p>
+    </div>
+
+
+
+    <!--<button class="finalizar" onclick="finalizarPagamento()">Finalizar Pagamento</button>-->
+    <!--<div id="qrcode"></div>-->
+
+    <!-- Caixa do Pix Copia e Cola -->
+    <!--<div class="pix-box" id="pix-box" style="display:none;">
+      <label><b>Pix Copia e Cola:</b></label>
+      <textarea id="pix-copia-cola" class="pix-input" rows="4" readonly></textarea>
+      <button class="copy-btn" onclick="copiarPix()">Copiar Código</button>
+    </div>-->
+  </div>
+
+  <script src="javascript/script.js"></script>
+  <script src="script.js"></script>
+  <script>
+    let valorTotal = 0;
+    const chavePix = "5f705196-5f73-42a8-b638-626b94edf869"; // SUA CHAVE PIX
+
+    function adicionarProduto() {
+      const select = document.getElementById('produto-select');
+      const produtosLista = document.querySelector('.produtos-lista');
+      const valorTotalSpan = document.getElementById('valor-total');
+      
+      const produtoNome = select.options[select.selectedIndex].text;
+      const produtoValor = parseFloat(select.value);
+
+      if (produtoNome === 'Selecione um produto' || isNaN(produtoValor)) {
+        alert('Por favor, selecione um produto válido.');
+        return;
+      }
+
+      const novoItem = document.createElement('div');
+      novoItem.classList.add('produto-item');
+      novoItem.innerHTML = `
+        <span>${produtoNome}</span>
+        <span>R$ ${produtoValor.toFixed(2)}</span>
+        <button onclick="removerProduto(this, ${produtoValor})">Remover</button>
+      `;
+
+      produtosLista.appendChild(novoItem);
+      
+      valorTotal += produtoValor;
+      valorTotalSpan.textContent = valorTotal.toFixed(2);
+      
+      document.getElementById('qrcode').innerHTML = '';
+      document.getElementById('pix-box').style.display = 'none';
+    }
+
+    function removerProduto(botao, valor) {
+      const item = botao.parentNode;
+      const valorTotalSpan = document.getElementById('valor-total');
+      item.remove();
+      valorTotal -= valor;
+      valorTotalSpan.textContent = valorTotal.toFixed(2);
+      document.getElementById('qrcode').innerHTML = '';
+      document.getElementById('pix-box').style.display = 'none';
+    }
+
+    // Gerar Payload Pix válido
+    function gerarPayloadPix(chave, valor) {
+      valor = valor.toFixed(2);
+      let payload =
+        "000201" +
+        "26580014BR.GOV.BCB.PIX0114" + chave +
+        "52040000" +
+        "5303986" +
+        "54" + valor.length.toString().padStart(2, "0") + valor +
+        "5802BR";
+      payload += "6304";
+      let crc = crc16(payload);
+      payload += crc;
+      return payload;
+    }
+
+    function crc16(str) {
+      let crc = 0xFFFF;
+      for (let c = 0; c < str.length; c++) {
+        crc ^= str.charCodeAt(c) << 8;
+        for (let i = 0; i < 8; i++) {
+          if ((crc & 0x8000) !== 0) {
+            crc = (crc << 1) ^ 0x1021;
+          } else {
+            crc = crc << 1;
+          }
+          crc &= 0xFFFF;
+        }
+      }
+      return crc.toString(16).toUpperCase().padStart(4, "0");
+    }
+
+    function finalizarPagamento() {
+      const produtosLista = document.querySelector('.produtos-lista');
+      const valorTotalSpan = document.getElementById('valor-total');
+      const qrcodeDiv = document.getElementById('qrcode');
+
+      if (valorTotal > 0) {
+        qrcodeDiv.innerHTML = '';
+
+        const payload = gerarPayloadPix(chavePix, valorTotal);
+
+        new QRCode(qrcodeDiv, {
+          text: payload,
+          width: 220,
+          height: 220
+        });
+
+        // Mostra Pix Copia e Cola
+        document.getElementById('pix-box').style.display = 'block';
+        document.getElementById('pix-copia-cola').value = payload;
+
+        alert(`O valor total a ser pago é de R$ ${valorTotal.toFixed(2)}. Escaneie o QR Code ou copie o código Pix.`);
+
+        produtosLista.innerHTML = '';
+        valorTotal = 0;
+        valorTotalSpan.textContent = valorTotal.toFixed(2);
+      } else {
+        alert('Não há nenhum pedido para ser pago.');
+        qrcodeDiv.innerHTML = '';
+        document.getElementById('pix-box').style.display = 'none';
+      }
+    }
+
+    function copiarPix() {
+      const copiaCola = document.getElementById('pix-copia-cola');
+      copiaCola.select();
+      copiaCola.setSelectionRange(0, 99999); // Para mobile
+      document.execCommand("copy");
+      alert("Código Pix copiado!");
+    }
+  </script>
+</body>
+</html>
